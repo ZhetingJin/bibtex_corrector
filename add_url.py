@@ -62,6 +62,25 @@ def _google_url(title: str, pause: float = 2.0) -> Optional[str]:
         pass
     return None
 
+def _insert_url_field(block: str, url: str) -> str:
+    """
+    Insert “  url = {url},” as the penultimate line of the BibTeX entry.
+
+    The function:
+      1. removes trailing whitespace,
+      2. makes sure the last existing field ends with a comma,
+      3. appends the new url line,
+      4. restores the closing brace and a final newline.
+    """
+    head, sep, _ = block.rstrip().rpartition("}")
+    if not sep:                               # malformed entry, give up
+        return block
+
+    # add comma to the current last field if missing
+    if not head.rstrip().endswith(","):
+        head = head.rstrip() + ","
+
+    return f"{head}\n  url = {{{url}}},\n}}\n"
 
 # ───────────────────────── main routine ─────────────────────
 
@@ -88,8 +107,7 @@ def process_bib_file(inp: StrOrPath, out: StrOrPath) -> None:
 
                 if url:
                     print(f"   ↳ {url}")
-                    block = re.sub(r",?\s*}$", ",\n}", block)          # comma before }
-                    block = block.replace("}", f"  url = {{{url}}},\n}}", 1)
+                    block = _insert_url_field(block, url)
                 else:
                     print("   ✘ no URL found")
 
